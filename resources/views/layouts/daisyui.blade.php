@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="th" data-theme="corporate">
+<html lang="th" data-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin Panel')</title>
     
     <!-- Tailwind CSS CDN -->
@@ -11,6 +12,9 @@
     
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Cropper.js CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     
     <style>
         /* Custom DaisyUI-like styles */
@@ -186,7 +190,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-base-200">
     <div class="drawer lg:drawer-open">
         <!-- Drawer Toggle -->
         <input id="drawer-toggle" type="checkbox" class="drawer-toggle" />
@@ -194,7 +198,7 @@
         <!-- Main Content -->
         <div class="drawer-content flex flex-col">
             <!-- Navbar -->
-            <div class="navbar bg-white shadow-lg">
+            <div class="navbar bg-base-100 shadow-lg">
                 <div class="flex-none lg:hidden">
                     <label for="drawer-toggle" class="btn btn-square btn-ghost">
                         <i class="fas fa-bars text-xl"></i>
@@ -202,21 +206,42 @@
                 </div>
                 
                 <div class="flex-1">
-                    <h1 class="text-xl font-bold text-gray-800">@yield('page-title', 'Dashboard')</h1>
+                    <h1 class="text-xl font-bold text-base-content">@yield('page-title', 'Dashboard')</h1>
                 </div>
                 
                 <div class="flex-none">
-                    <div class="dropdown dropdown-end">
-                        <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
-                            <i class="fas fa-user"></i>
+                    @auth
+                        <div class="dropdown dropdown-end">
+                            <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+                                <div class="w-8 h-8 bg-primary text-primary-content rounded-full flex items-center justify-center">
+                                    {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+                                </div>
+                            </div>
+                            <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
+                                <li>
+                                    <div class="px-4 py-2 text-sm">
+                                        <div class="font-semibold text-base-content">{{ auth()->user()->name }}</div>
+                                        <div class="text-base-content/70">{{ auth()->user()->getRoleDisplayName() }}</div>
+                                    </div>
+                                </li>
+                                <li><hr class="my-2"></li>
+                                <li><a class="text-base-content"><i class="fas fa-user me-2"></i>โปรไฟล์</a></li>
+                                @if(auth()->user()->isSuperAdmin())
+                                    <li><a class="text-base-content"><i class="fas fa-cog me-2"></i>ตั้งค่า</a></li>
+                                @endif
+                                <li><hr class="my-2"></li>
+                                <li>
+                                    <a href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" class="text-error">
+                                        <i class="fas fa-sign-out-alt me-2"></i>ออกจากระบบ
+                                    </a>
+                                </li>
+                            </ul>
                         </div>
-                        <ul tabindex="0" class="menu menu-sm dropdown-content">
-                            <li><a><i class="fas fa-user me-2"></i>Profile</a></li>
-                            <li><a><i class="fas fa-cog me-2"></i>Settings</a></li>
-                            <li><hr class="my-2"></li>
-                            <li><a href="{{ route('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                        </ul>
-                    </div>
+                        
+                        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
+                            @csrf
+                        </form>
+                    @endauth
                 </div>
             </div>
             
@@ -229,13 +254,24 @@
         <!-- Sidebar -->
         <div class="drawer-side">
             <label for="drawer-toggle" class="drawer-overlay"></label>
-            <aside class="min-h-full w-64 bg-white">
+            <aside class="min-h-full w-64 bg-base-100">
                 <!-- Sidebar Header -->
-                <div class="p-4 border-b border-gray-200">
-                    <h2 class="text-2xl font-bold text-blue-600">
+                <div class="p-4 border-b border-base-300">
+                    <h2 class="text-2xl font-bold text-primary mb-2">
                         <i class="fas fa-tachometer-alt me-2"></i>
                         Admin Panel
                     </h2>
+                    @auth
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-primary text-primary-content rounded-full flex items-center justify-center">
+                                {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+                            </div>
+                            <div>
+                                <div class="font-semibold text-sm text-base-content">{{ auth()->user()->name }}</div>
+                                <div class="text-xs text-base-content/70">{{ auth()->user()->getRoleDisplayName() }}</div>
+                            </div>
+                        </div>
+                    @endauth
                 </div>
                 
                 <!-- Sidebar Menu -->
@@ -246,45 +282,70 @@
                             Dashboard
                         </a>
                     </li>
-                    <li>
-                        <a href="#" class="{{ request()->routeIs('users') ? 'active' : '' }}">
-                            <i class="fas fa-users"></i>
-                            Users
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="{{ request()->routeIs('bookings') ? 'active' : '' }}">
-                            <i class="fas fa-calendar-check"></i>
-                            Bookings
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="{{ request()->routeIs('reports') ? 'active' : '' }}">
-                            <i class="fas fa-chart-bar"></i>
-                            Reports
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" class="{{ request()->routeIs('settings') ? 'active' : '' }}">
-                            <i class="fas fa-cog"></i>
-                            Settings
-                        </a>
-                    </li>
+                    
+                    @auth
+                        @if(auth()->user()->isSuperAdmin())
+                            <li>
+                                <a href="{{ route('users.index') }}" class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
+                                    <i class="fas fa-users"></i>
+                                    จัดการผู้ใช้
+                                </a>
+                            </li>
+                        @endif
+                        
+                        @if(auth()->user()->hasAdminPrivileges())
+                            <li>
+                                <a href="#" class="{{ request()->routeIs('bookings.*') ? 'active' : '' }}">
+                                    <i class="fas fa-calendar-check"></i>
+                                    จัดการการจอง
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#" class="{{ request()->routeIs('tours.*') ? 'active' : '' }}">
+                                    <i class="fas fa-map-marked-alt"></i>
+                                    จัดการทัวร์
+                                </a>
+                            </li>
+                        @endif
+                        
+                        @if(auth()->user()->isReport() || auth()->user()->hasAdminPrivileges())
+                            <li>
+                                <a href="#" class="{{ request()->routeIs('reports.*') ? 'active' : '' }}">
+                                    <i class="fas fa-chart-bar"></i>
+                                    รายงาน
+                                </a>
+                            </li>
+                        @endif
+                        
+                        @if(auth()->user()->isSuperAdmin())
+                            <li>
+                                <a href="#" class="{{ request()->routeIs('settings.*') ? 'active' : '' }}">
+                                    <i class="fas fa-cog"></i>
+                                    ตั้งค่าระบบ
+                                </a>
+                            </li>
+                        @endif
+                    @endauth
                     
                     <!-- Divider -->
                     <div class="divider"></div>
                     
-                    <li>
-                        <a href="{{ route('logout') }}" class="text-red-600">
-                            <i class="fas fa-sign-out-alt"></i>
-                            Logout
-                        </a>
-                    </li>
+                    @auth
+                        <li>
+                            <a href="{{ route('logout') }}" class="text-error">
+                                <i class="fas fa-sign-out-alt"></i>
+                                ออกจากระบบ
+                            </a>
+                        </li>
+                    @endauth
                 </ul>
             </aside>
         </div>
     </div>
     
     @stack('scripts')
+    
+    <!-- Cropper.js JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 </body>
 </html>

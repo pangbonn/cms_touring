@@ -211,13 +211,52 @@
                 <h3 class="text-lg font-semibold text-gray-800">ข้อมูลทดสอบ</h3>
             </div>
             <div class="space-y-3">
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-600">อีเมล:</span>
-                    <code class="text-sm bg-white px-2 py-1 rounded border">admin@example.com</code>
+                <!-- Super Admin -->
+                <div class="p-3 bg-gradient-to-r from-red-50 to-pink-50 rounded-lg border border-red-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-bold text-red-700">Super Admin</span>
+                        <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">สูงสุด</span>
+                    </div>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs text-gray-600">อีเมล:</span>
+                        <code class="text-xs bg-white px-2 py-1 rounded border">superadmin@example.com</code>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-600">รหัสผ่าน:</span>
+                        <code class="text-xs bg-white px-2 py-1 rounded border">password123</code>
+                    </div>
                 </div>
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span class="text-sm font-medium text-gray-600">รหัสผ่าน:</span>
-                    <code class="text-sm bg-white px-2 py-1 rounded border">password</code>
+
+                <!-- Admin -->
+                <div class="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-bold text-blue-700">Admin</span>
+                        <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">ผู้ดูแล</span>
+                    </div>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs text-gray-600">อีเมล:</span>
+                        <code class="text-xs bg-white px-2 py-1 rounded border">admin@example.com</code>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-600">รหัสผ่าน:</span>
+                        <code class="text-xs bg-white px-2 py-1 rounded border">password123</code>
+                    </div>
+                </div>
+
+                <!-- Report -->
+                <div class="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-bold text-green-700">Report</span>
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">รายงาน</span>
+                    </div>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs text-gray-600">อีเมล:</span>
+                        <code class="text-xs bg-white px-2 py-1 rounded border">report@example.com</code>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-600">รหัสผ่าน:</span>
+                        <code class="text-xs bg-white px-2 py-1 rounded border">password123</code>
+                    </div>
                 </div>
             </div>
             <div class="mt-4 p-3 bg-blue-50 rounded-lg">
@@ -245,7 +284,7 @@
             
             if (emailCode && passwordCode) {
                 emailCode.addEventListener('click', function() {
-                    navigator.clipboard.writeText('admin@example.com');
+                    navigator.clipboard.writeText('superadmin@example.com');
                     this.style.backgroundColor = '#10b981';
                     this.style.color = 'white';
                     setTimeout(() => {
@@ -255,7 +294,7 @@
                 });
                 
                 passwordCode.addEventListener('click', function() {
-                    navigator.clipboard.writeText('password');
+                    navigator.clipboard.writeText('password123');
                     this.style.backgroundColor = '#10b981';
                     this.style.color = 'white';
                     setTimeout(() => {

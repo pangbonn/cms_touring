@@ -4,6 +4,23 @@
 @section('page-title', 'Dashboard')
 
 @section('content')
+<!-- User Info Card -->
+<div class="card bg-gradient-to-r from-blue-500 to-purple-600 text-white mb-6">
+    <div class="card-body">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold">สวัสดี, {{ $user->name }}!</h2>
+                <p class="text-blue-100">สิทธิ์: {{ $user->getRoleDisplayName() }}</p>
+                <p class="text-blue-100">อีเมล: {{ $user->email }}</p>
+            </div>
+            <div class="text-6xl opacity-80">
+                <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
 <style>
     .stat {
         background-color: white;
@@ -318,10 +335,12 @@
                     <i class="fas fa-plus me-2"></i>
                     เพิ่มการจองใหม่
                 </button>
-                <button class="btn btn-outline w-full justify-start">
-                    <i class="fas fa-user-plus me-2"></i>
-                    เพิ่มผู้ใช้ใหม่
-                </button>
+                @if($user->isSuperAdmin())
+                    <a href="{{ route('users.index') }}" class="btn btn-outline w-full justify-start">
+                        <i class="fas fa-users me-2"></i>
+                        จัดการผู้ใช้
+                    </a>
+                @endif
                 <button class="btn btn-outline w-full justify-start">
                     <i class="fas fa-chart-bar me-2"></i>
                     ดูรายงาน

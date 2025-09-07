@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -11,12 +12,7 @@ class DashboardController extends Controller
      */
     public function __construct()
     {
-        $this->middleware(function ($request, $next) {
-            if (!session('admin_logged_in')) {
-                return redirect()->route('login');
-            }
-            return $next($request);
-        });
+        $this->middleware('auth');
     }
 
     /**
@@ -24,6 +20,8 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        return view('dashboard-daisyui');
+        $user = Auth::user();
+        
+        return view('dashboard-daisyui', compact('user'));
     }
 }
