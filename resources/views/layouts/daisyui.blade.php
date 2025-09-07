@@ -291,9 +291,37 @@
                                     จัดการผู้ใช้
                                 </a>
                             </li>
+                            <li>
+                                <a href="{{ route('webconfig.index') }}" class="{{ request()->routeIs('webconfig.*') ? 'active' : '' }}">
+                                    <i class="fas fa-cog"></i>
+                                    การตั้งค่าเว็บไซต์
+                                </a>
+                            </li>
                         @endif
                         
                         @if(auth()->user()->hasAdminPrivileges())
+                            <li>
+                                <details class="{{ request()->routeIs('booking-terms.*') || request()->routeIs('cancellation-policies.*') ? 'open' : '' }}">
+                                    <summary class="{{ request()->routeIs('booking-terms.*') || request()->routeIs('cancellation-policies.*') ? 'active' : '' }}">
+                                        <i class="fas fa-cogs"></i>
+                                        การจัดการเงื่อนไข
+                                    </summary>
+                                    <ul>
+                                        <li>
+                                            <a href="{{ route('booking-terms.index') }}" class="{{ request()->routeIs('booking-terms.*') ? 'active' : '' }}">
+                                                <i class="fas fa-clipboard-list"></i>
+                                                การจอง
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{{ route('cancellation-policies.index') }}" class="{{ request()->routeIs('cancellation-policies.*') ? 'active' : '' }}">
+                                                <i class="fas fa-file-contract"></i>
+                                                ยกเลิกทริป
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </details>
+                            </li>
                             <li>
                                 <a href="#" class="{{ request()->routeIs('bookings.*') ? 'active' : '' }}">
                                     <i class="fas fa-calendar-check"></i>
