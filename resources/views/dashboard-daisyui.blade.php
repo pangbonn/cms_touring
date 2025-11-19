@@ -150,16 +150,16 @@
 
 <!-- Stats Cards -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <!-- Total Users -->
+    <!-- Total Trips -->
     <div class="stat stat-primary">
         <div class="flex justify-between items-center">
             <div>
-                <div class="text-sm opacity-80">ผู้ใช้ทั้งหมด</div>
-                <div class="text-3xl font-bold">1,234</div>
-                <div class="text-sm opacity-80">+12% จากเดือนที่แล้ว</div>
+                <div class="text-sm opacity-80">ทริปทั้งหมด</div>
+                <div class="text-3xl font-bold">{{ $stats['totalTrips'] }}</div>
+                <div class="text-sm opacity-80">ทริปที่เปิดใช้งาน</div>
             </div>
             <div class="text-4xl opacity-80">
-                <i class="fas fa-users"></i>
+                <i class="fas fa-map-marked-alt"></i>
             </div>
         </div>
     </div>
@@ -169,8 +169,16 @@
         <div class="flex justify-between items-center">
             <div>
                 <div class="text-sm opacity-80">การจองทั้งหมด</div>
-                <div class="text-3xl font-bold">567</div>
-                <div class="text-sm opacity-80">+8% จากเดือนที่แล้ว</div>
+                <div class="text-3xl font-bold">{{ $stats['totalBookings'] }}</div>
+                <div class="text-sm opacity-80">
+                    @if($stats['bookingGrowth'] > 0)
+                        +{{ $stats['bookingGrowth'] }}% จากเดือนที่แล้ว
+                    @elseif($stats['bookingGrowth'] < 0)
+                        {{ $stats['bookingGrowth'] }}% จากเดือนที่แล้ว
+                    @else
+                        ไม่มีการเปลี่ยนแปลง
+                    @endif
+                </div>
             </div>
             <div class="text-4xl opacity-80">
                 <i class="fas fa-calendar-check"></i>
@@ -178,16 +186,16 @@
         </div>
     </div>
     
-    <!-- Pending Bookings -->
+    <!-- Confirmed Bookings -->
     <div class="stat stat-accent">
         <div class="flex justify-between items-center">
             <div>
-                <div class="text-sm opacity-80">รอดำเนินการ</div>
-                <div class="text-3xl font-bold">89</div>
-                <div class="text-sm opacity-80">-5% จากเดือนที่แล้ว</div>
+                <div class="text-sm opacity-80">การจองที่อนุมัติ</div>
+                <div class="text-3xl font-bold">{{ $stats['confirmedBookings'] }}</div>
+                <div class="text-sm opacity-80">ผู้จองที่ยืนยันแล้ว</div>
             </div>
             <div class="text-4xl opacity-80">
-                <i class="fas fa-clock"></i>
+                <i class="fas fa-check-circle"></i>
             </div>
         </div>
     </div>
@@ -197,12 +205,54 @@
         <div class="flex justify-between items-center">
             <div>
                 <div class="text-sm opacity-80">รายได้รวม</div>
-                <div class="text-3xl font-bold">฿45,678</div>
-                <div class="text-sm opacity-80">+15% จากเดือนที่แล้ว</div>
+                <div class="text-3xl font-bold">฿{{ number_format($stats['totalRevenue'], 0) }}</div>
+                <div class="text-sm opacity-80">จากการจองที่อนุมัติ</div>
             </div>
             <div class="text-4xl opacity-80">
                 <i class="fas fa-dollar-sign"></i>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Booking Status Chart -->
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title text-lg mb-4">
+                <i class="fas fa-chart-pie text-blue-600"></i>
+                สถานะการจอง
+            </h2>
+            <div class="h-64">
+                <canvas id="bookingStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Revenue Chart -->
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title text-lg mb-4">
+                <i class="fas fa-chart-line text-green-600"></i>
+                รายได้รายเดือน
+            </h2>
+            <div class="h-64">
+                <canvas id="monthlyRevenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trip Popularity Chart -->
+<div class="card mb-6">
+    <div class="card-body">
+        <h2 class="card-title text-lg mb-4">
+            <i class="fas fa-chart-bar text-purple-600"></i>
+            ความนิยมของทริป
+        </h2>
+        <div class="h-64">
+            <canvas id="tripPopularityChart"></canvas>
         </div>
     </div>
 </div>
@@ -216,106 +266,89 @@
                     <i class="fas fa-calendar-alt text-blue-600"></i>
                     การจองล่าสุด
                 </h2>
-                <button class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus me-1"></i>
-                    เพิ่มใหม่
-                </button>
+                <a href="{{ route('bookings.index') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-eye me-1"></i>
+                    ดูทั้งหมด
+                </a>
             </div>
             
             <div class="overflow-x-auto">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th>รหัสการจอง</th>
                             <th>ลูกค้า</th>
-                            <th>วันที่</th>
+                            <th>ทริป</th>
+                            <th>วันที่เดินทาง</th>
                             <th>สถานะ</th>
                             <th>จำนวนเงิน</th>
                             <th>การดำเนินการ</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td class="font-mono">#001</td>
-                            <td>
-                                <div class="flex items-center gap-3">
-                                    <div class="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                                        <i class="fas fa-user"></i>
+                        @forelse($recentBookings as $booking)
+                            <tr>
+                                <td class="font-mono text-sm">{{ $booking->booking_id }}</td>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                                            <i class="fas fa-user text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-bold text-sm">{{ $booking->customer_name }}</div>
+                                            <div class="text-xs text-gray-500">{{ $booking->customer_phone }}</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div class="font-bold">สมชาย ใจดี</div>
-                                        <div class="text-sm text-gray-500">somchai@email.com</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>2024-01-15</td>
-                            <td>
-                                <div class="badge badge-success">
-                                    <i class="fas fa-check me-1"></i>
-                                    ยืนยันแล้ว
-                                </div>
-                            </td>
-                            <td class="font-bold">฿2,500</td>
-                            <td>
-                                <button class="btn btn-ghost btn-xs">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="font-mono">#002</td>
-                            <td>
-                                <div class="flex items-center gap-3">
-                                    <div class="w-12 h-12 rounded-full bg-green-600 text-white flex items-center justify-center">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                    <div>
-                                        <div class="font-bold">สมหญิง รักดี</div>
-                                        <div class="text-sm text-gray-500">somying@email.com</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>2024-01-14</td>
-                            <td>
-                                <div class="badge badge-warning">
-                                    <i class="fas fa-clock me-1"></i>
-                                    รอดำเนินการ
-                                </div>
-                            </td>
-                            <td class="font-bold">฿1,800</td>
-                            <td>
-                                <button class="btn btn-ghost btn-xs">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="font-mono">#003</td>
-                            <td>
-                                <div class="flex items-center gap-3">
-                                    <div class="w-12 h-12 rounded-full bg-orange-600 text-white flex items-center justify-center">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                    <div>
-                                        <div class="font-bold">วิชัย เก่งมาก</div>
-                                        <div class="text-sm text-gray-500">wichai@email.com</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>2024-01-13</td>
-                            <td>
-                                <div class="badge badge-error">
-                                    <i class="fas fa-times me-1"></i>
-                                    ยกเลิก
-                                </div>
-                            </td>
-                            <td class="font-bold">฿3,200</td>
-                            <td>
-                                <button class="btn btn-ghost btn-xs">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </td>
-                        </tr>
+                                </td>
+                                <td>
+                                    <div class="text-sm font-semibold">{{ $booking->trip->name }}</div>
+                                </td>
+                                <td>
+                                    <div class="text-sm">{{ $booking->tripSchedule->departure_date_thai }}</div>
+                                </td>
+                                <td>
+                                    @switch($booking->status)
+                                        @case('pending')
+                                            <div class="badge badge-warning">
+                                                <i class="fas fa-clock me-1"></i>
+                                                รอดำเนินการ
+                                            </div>
+                                            @break
+                                        @case('confirmed')
+                                            <div class="badge badge-success">
+                                                <i class="fas fa-check me-1"></i>
+                                                ยืนยันแล้ว
+                                            </div>
+                                            @break
+                                        @case('cancelled')
+                                            <div class="badge badge-error">
+                                                <i class="fas fa-times me-1"></i>
+                                                ยกเลิก
+                                            </div>
+                                            @break
+                                        @case('completed')
+                                            <div class="badge badge-info">
+                                                <i class="fas fa-flag-checkered me-1"></i>
+                                                เสร็จสิ้น
+                                            </div>
+                                            @break
+                                    @endswitch
+                                </td>
+                                <td class="font-bold text-sm">฿{{ number_format($booking->total_price, 0) }}</td>
+                                <td>
+                                    <a href="{{ route('bookings.show', $booking) }}" class="btn btn-ghost btn-xs">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="text-center py-8 text-gray-500">
+                                    <i class="fas fa-calendar-times text-2xl mb-2"></i>
+                                    <div>ยังไม่มีการจอง</div>
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
@@ -324,6 +357,40 @@
     
     <!-- Sidebar -->
     <div class="space-y-6">
+        <!-- Upcoming Trips -->
+        <div class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800">
+                    <i class="fas fa-calendar-alt text-blue-600"></i>
+                    ทริปที่ใกล้ถึง
+                </h2>
+                <a href="{{ route('trips.calendar') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-calendar me-1"></i>
+                    ปฏิทิน
+                </a>
+            </div>
+            <div class="space-y-3">
+                @forelse($upcomingTrips as $tripSchedule)
+                    <div class="border border-gray-200 rounded-lg p-3">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-semibold text-sm">{{ $tripSchedule->trip->name }}</h3>
+                            <span class="badge badge-primary badge-sm">{{ number_format($tripSchedule->price, 0) }} บาท</span>
+                        </div>
+                        <div class="text-xs text-gray-600 space-y-1">
+                            <div><i class="fas fa-calendar me-1"></i>{{ $tripSchedule->departure_date_thai }}</div>
+                            <div><i class="fas fa-users me-1"></i>จำนวนสูงสุด: {{ $tripSchedule->max_participants }} คน</div>
+                            <div><i class="fas fa-clock me-1"></i>{{ $tripSchedule->duration }}</div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-center py-4 text-gray-500">
+                        <i class="fas fa-calendar-times text-2xl mb-2"></i>
+                        <div class="text-sm">ไม่มีทริปที่ใกล้ถึง</div>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+
         <!-- Quick Actions -->
         <div class="card">
             <h2 class="text-xl font-bold text-gray-800 mb-4">
@@ -331,24 +398,24 @@
                 การดำเนินการด่วน
             </h2>
             <div class="space-y-2">
-                <button class="btn btn-primary w-full justify-start">
+                <a href="{{ route('booking.create') }}" class="btn btn-primary w-full justify-start">
                     <i class="fas fa-plus me-2"></i>
                     เพิ่มการจองใหม่
-                </button>
-                @if($user->isSuperAdmin())
+                </a>
+                <a href="{{ route('bookings.index') }}" class="btn btn-outline w-full justify-start">
+                    <i class="fas fa-calendar-check me-2"></i>
+                    จัดการการจอง
+                </a>
+                <!-- @if($user->isSuperAdmin())
                     <a href="{{ route('users.index') }}" class="btn btn-outline w-full justify-start">
                         <i class="fas fa-users me-2"></i>
                         จัดการผู้ใช้
                     </a>
-                @endif
-                <button class="btn btn-outline w-full justify-start">
-                    <i class="fas fa-chart-bar me-2"></i>
-                    ดูรายงาน
-                </button>
-                <button class="btn btn-outline w-full justify-start">
-                    <i class="fas fa-cog me-2"></i>
-                    ตั้งค่าระบบ
-                </button>
+                @endif -->
+                <a href="{{ route('trips.index') }}" class="btn btn-outline w-full justify-start">
+                    <i class="fas fa-map-marked-alt me-2"></i>
+                    จัดการทริป
+                </a>
             </div>
         </div>
         
@@ -429,34 +496,142 @@
     </div>
 </div>
 
-<!-- Charts Section -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-    <!-- Booking Chart -->
-    <div class="card">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">
-            <i class="fas fa-chart-line text-blue-600"></i>
-            กราฟการจองรายเดือน
-        </h2>
-        <div class="h-64 flex items-center justify-center bg-gray-100 rounded-lg">
-            <div class="text-center">
-                <i class="fas fa-chart-line text-6xl text-gray-400 mb-4"></i>
-                <p class="text-gray-500">กราฟจะแสดงที่นี่</p>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Category Chart -->
-    <div class="card">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">
-            <i class="fas fa-chart-pie text-blue-600"></i>
-            สัดส่วนการจองตามประเภท
-        </h2>
-        <div class="h-64 flex items-center justify-center bg-gray-100 rounded-lg">
-            <div class="text-center">
-                <i class="fas fa-chart-pie text-6xl text-gray-400 mb-4"></i>
-                <p class="text-gray-500">กราฟจะแสดงที่นี่</p>
-            </div>
-        </div>
-    </div>
-</div>
+
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart data from PHP
+    const bookingStatusData = {
+        pending: {{ $stats['pendingBookings'] }},
+        confirmed: {{ $stats['confirmedBookings'] }},
+        cancelled: {{ \App\Models\Booking::where('status', 'cancelled')->count() }},
+        completed: {{ \App\Models\Booking::where('status', 'completed')->count() }}
+    };
+
+    const monthlyRevenueData = {!! json_encode($monthlyRevenue ?? []) !!};
+    const tripPopularityData = {!! json_encode($tripPopularity ?? []) !!};
+
+    // Booking Status Pie Chart
+    const bookingStatusCtx = document.getElementById('bookingStatusChart').getContext('2d');
+    new Chart(bookingStatusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['รอดำเนินการ', 'ยืนยันแล้ว', 'ยกเลิก', 'เสร็จสิ้น'],
+            datasets: [{
+                data: [
+                    bookingStatusData.pending,
+                    bookingStatusData.confirmed,
+                    bookingStatusData.cancelled,
+                    bookingStatusData.completed
+                ],
+                backgroundColor: [
+                    '#f59e0b', // amber
+                    '#10b981', // emerald
+                    '#ef4444', // red
+                    '#6366f1'  // indigo
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+
+    // Monthly Revenue Line Chart
+    const monthlyRevenueCtx = document.getElementById('monthlyRevenueChart').getContext('2d');
+    new Chart(monthlyRevenueCtx, {
+        type: 'line',
+        data: {
+            labels: monthlyRevenueData.labels || ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+            datasets: [{
+                label: 'รายได้ (บาท)',
+                data: monthlyRevenueData.values || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#10b981',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '฿' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Trip Popularity Bar Chart
+    const tripPopularityCtx = document.getElementById('tripPopularityChart').getContext('2d');
+    new Chart(tripPopularityCtx, {
+        type: 'bar',
+        data: {
+            labels: tripPopularityData.labels || ['ทริป A', 'ทริป B', 'ทริป C'],
+            datasets: [{
+                label: 'จำนวนการจอง',
+                data: tripPopularityData.values || [0, 0, 0],
+                backgroundColor: [
+                    '#8b5cf6', // violet
+                    '#06b6d4', // cyan
+                    '#f59e0b', // amber
+                    '#ef4444', // red
+                    '#10b981'  // emerald
+                ],
+                borderWidth: 0,
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+@endpush
 @endsection

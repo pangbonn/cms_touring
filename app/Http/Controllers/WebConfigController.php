@@ -6,6 +6,7 @@ use App\Models\WebConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class WebConfigController extends Controller
 {
@@ -74,7 +75,7 @@ class WebConfigController extends Controller
             $data['site_logo'] = $logoName;
             
             // Log compression info
-            \Log::info("Logo compressed: {$originalSizeKB}KB -> {$compressedSizeKB}KB");
+            Log::info("Logo compressed: {$originalSizeKB}KB -> {$compressedSizeKB}KB");
         }
 
         $config->update($data);
@@ -95,6 +96,13 @@ class WebConfigController extends Controller
      */
     private function compressImage($image, $destination, $maxSizeKB)
     {
+        // Check if GD extension is available
+        if (!extension_loaded('gd')) {
+            // Fallback: just copy the file without compression
+            $this->copyImageWithoutCompression($image, $destination);
+            return;
+        }
+
         $imagePath = $image->getPathname();
         $imageInfo = getimagesize($imagePath);
         
@@ -109,13 +117,27 @@ class WebConfigController extends Controller
         // Create image resource based on mime type
         switch ($mimeType) {
             case 'image/jpeg':
+                if (!function_exists('imagecreatefromjpeg')) {
+                    $this->copyImageWithoutCompression($image, $destination);
+                    return;
+                }
                 $sourceImage = imagecreatefromjpeg($imagePath);
                 break;
             case 'image/png':
+                if (!function_exists('imagecreatefrompng')) {
+                    $this->copyImageWithoutCompression($image, $destination);
+                    return;
+                }
                 $sourceImage = imagecreatefrompng($imagePath);
                 break;
             default:
                 throw new \Exception('รองรับเฉพาะไฟล์ JPEG และ PNG เท่านั้น');
+        }
+
+        // Check if required GD functions are available
+        if (!function_exists('imagecreatetruecolor') || !function_exists('imagecopyresampled')) {
+            $this->copyImageWithoutCompression($image, $destination);
+            return;
         }
 
         // Resize if image is too large (e.g., > 800px)
@@ -133,10 +155,12 @@ class WebConfigController extends Controller
         
         // Preserve transparency for PNG
         if ($mimeType === 'image/png') {
-            imagealphablending($newImage, false);
-            imagesavealpha($newImage, true);
-            $transparent = imagecolorallocatealpha($newImage, 255, 255, 255, 127);
-            imagefilledrectangle($newImage, 0, 0, $newWidth, $newHeight, $transparent);
+            if (function_exists('imagealphablending') && function_exists('imagesavealpha')) {
+                imagealphablending($newImage, false);
+                imagesavealpha($newImage, true);
+                $transparent = imagecolorallocatealpha($newImage, 255, 255, 255, 127);
+                imagefilledrectangle($newImage, 0, 0, $newWidth, $newHeight, $transparent);
+            }
         }
 
         // Resample image
@@ -148,9 +172,19 @@ class WebConfigController extends Controller
         
         do {
             if ($mimeType === 'image/jpeg') {
-                imagejpeg($newImage, $tempFile, $quality);
+                if (function_exists('imagejpeg')) {
+                    imagejpeg($newImage, $tempFile, $quality);
+                } else {
+                    $this->copyImageWithoutCompression($image, $destination);
+                    return;
+                }
             } else {
-                imagepng($newImage, $tempFile, 9 - intval($quality / 10));
+                if (function_exists('imagepng')) {
+                    imagepng($newImage, $tempFile, 9 - intval($quality / 10));
+                } else {
+                    $this->copyImageWithoutCompression($image, $destination);
+                    return;
+                }
             }
             
             $fileSizeKB = filesize($tempFile) / 1024;
@@ -167,7 +201,26 @@ class WebConfigController extends Controller
         
         // Cleanup
         unlink($tempFile);
-        imagedestroy($sourceImage);
-        imagedestroy($newImage);
+        if (function_exists('imagedestroy')) {
+            imagedestroy($sourceImage);
+            imagedestroy($newImage);
+        }
+    }
+
+    /**
+     * Copy image without compression (fallback when GD is not available)
+     */
+    private function copyImageWithoutCompression($image, $destination)
+    {
+        // Ensure destination directory exists
+        $destinationDir = dirname($destination);
+        if (!is_dir($destinationDir)) {
+            mkdir($destinationDir, 0755, true);
+        }
+
+        // Simply copy the file
+        copy($image->getPathname(), $destination);
+        
+        Log::info("Image copied without compression (GD extension not available)");
     }
 }

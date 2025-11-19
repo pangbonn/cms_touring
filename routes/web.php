@@ -7,7 +7,9 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\WebConfigController;
 use App\Http\Controllers\TripCancellationController;
 use App\Http\Controllers\CancellationPolicyController;
+use App\Http\Controllers\TripController;
 use App\Http\Controllers\BookingTermController;
+use App\Http\Controllers\BookingController;
 
 // Redirect root to login
 Route::get('/', function () {
@@ -23,6 +25,9 @@ Route::get('/font-test', function () {
 Route::get('/test-daisyui', function () {
     return view('test-daisyui');
 })->name('test-daisyui');
+
+// Booking Routes (Public)
+Route::get('/booking', [BookingController::class, 'create'])->name('booking.create');
 
 // Authentication Routes
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -75,5 +80,23 @@ Route::middleware(['web'])->group(function () {
         Route::get('booking-terms/{bookingTerm}/details', [BookingTermController::class, 'getTermDetails'])->name('booking-terms.details');
         Route::get('booking-terms/active/list', [BookingTermController::class, 'getActiveTerms'])->name('booking-terms.active');
         Route::post('booking-terms/create-default', [BookingTermController::class, 'createDefaultTerms'])->name('booking-terms.create-default');
+    });
+    
+    // Trip Management Routes (Admin and Superadmin)
+    Route::middleware(['auth', 'role:admin,superadmin'])->group(function () {
+        Route::resource('trips', TripController::class);
+        Route::get('trips-test/create', [TripController::class, 'testCreate'])->name('trips.test-create');
+        Route::get('trips-calendar', [TripController::class, 'calendar'])->name('trips.calendar');
+        Route::post('trips/{trip}/schedules', [TripController::class, 'storeSchedule'])->name('trips.schedules.store');
+        Route::put('trips/{trip}/schedules/{schedule}', [TripController::class, 'updateSchedule'])->name('trips.schedules.update');
+        Route::patch('trips/{trip}/schedules/{schedule}/toggle', [TripController::class, 'toggleSchedule'])->name('trips.schedules.toggle');
+        Route::delete('trips/{trip}/schedules/{schedule}', [TripController::class, 'destroySchedule'])->name('trips.schedules.destroy');
+    });
+    
+    // Booking Management Routes (Admin and Superadmin)
+    Route::middleware(['auth', 'role:admin,superadmin'])->group(function () {
+        Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
+        Route::get('bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+        Route::patch('bookings/{booking}/status', [BookingController::class, 'updateStatus'])->name('bookings.update-status');
     });
 });

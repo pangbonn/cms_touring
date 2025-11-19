@@ -42,9 +42,10 @@
             width: 16rem;
             background-color: white;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            z-index: 40;
+            z-index: 9999;
             transform: translateX(-100%);
             transition: transform 0.3s ease-in-out;
+            overflow-y: auto;
         }
         
         .drawer-overlay {
@@ -54,7 +55,7 @@
             right: 0;
             bottom: 0;
             background-color: rgba(0, 0, 0, 0.5);
-            z-index: 30;
+            z-index: 9998;
             opacity: 0;
             visibility: hidden;
             transition: all 0.3s ease-in-out;
@@ -74,8 +75,20 @@
                 transform: translateX(0);
                 position: relative;
                 height: auto;
+                width: 16rem;
             }
             
+            .drawer-content {
+                margin-left: 0;
+            }
+            
+            .drawer-overlay {
+                display: none;
+            }
+        }
+        
+        /* Mobile specific styles */
+        @media (max-width: 1023px) {
             .drawer-content {
                 margin-left: 0;
             }
@@ -85,6 +98,24 @@
             background-color: white;
             box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
             padding: 0.75rem 1rem;
+            position: relative;
+            z-index: 1000;
+        }
+        
+        /* Hamburger menu button */
+        .btn-square {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .btn-square:hover {
+            background-color: #f3f4f6;
+            transform: scale(1.05);
         }
         
         .btn {
@@ -198,7 +229,7 @@
         <!-- Main Content -->
         <div class="drawer-content flex flex-col">
             <!-- Navbar -->
-            <div class="navbar bg-base-100 shadow-lg">
+            <div class="navbar bg-base-100 shadow-lg sticky top-0" style="z-index: 1000;">
                 <div class="flex-none lg:hidden">
                     <label for="drawer-toggle" class="btn btn-square btn-ghost">
                         <i class="fas fa-bars text-xl"></i>
@@ -301,6 +332,12 @@
                         
                         @if(auth()->user()->hasAdminPrivileges())
                             <li>
+                                <a href="{{ route('trips.index') }}" class="{{ request()->routeIs('trips.index') || request()->routeIs('trips.create') || request()->routeIs('trips.edit') || request()->routeIs('trips.show') ? 'active' : '' }}">
+                                    <i class="fas fa-map-marked-alt"></i>
+                                    การจัดการทริป
+                                </a>
+                            </li>
+                            <li>
                                 <details class="{{ request()->routeIs('booking-terms.*') || request()->routeIs('cancellation-policies.*') ? 'open' : '' }}">
                                     <summary class="{{ request()->routeIs('booking-terms.*') || request()->routeIs('cancellation-policies.*') ? 'active' : '' }}">
                                         <i class="fas fa-cogs"></i>
@@ -323,35 +360,41 @@
                                 </details>
                             </li>
                             <li>
-                                <a href="#" class="{{ request()->routeIs('bookings.*') ? 'active' : '' }}">
+                                <a href="{{ route('bookings.index') }}" class="{{ request()->routeIs('bookings.*') ? 'active' : '' }}">
                                     <i class="fas fa-calendar-check"></i>
                                     จัดการการจอง
                                 </a>
                             </li>
                             <li>
-                                <a href="#" class="{{ request()->routeIs('tours.*') ? 'active' : '' }}">
-                                    <i class="fas fa-map-marked-alt"></i>
-                                    จัดการทัวร์
+                                <a href="{{ route('trips.calendar') }}" class="{{ request()->routeIs('trips.calendar') ? 'active' : '' }}">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    ปฏิทินรายการทริป
                                 </a>
                             </li>
+                            <!-- <li>
+                                <a href="#" class="{{ request()->routeIs('tours.*') ? 'active' : '' }}">
+                                    <i class="fas fa-map-marked-alt"></i>ย
+                                    จัดการทัวร์
+                                </a>
+                            </li> -->
                         @endif
                         
                         @if(auth()->user()->isReport() || auth()->user()->hasAdminPrivileges())
-                            <li>
+                            <!-- <li>
                                 <a href="#" class="{{ request()->routeIs('reports.*') ? 'active' : '' }}">
                                     <i class="fas fa-chart-bar"></i>
                                     รายงาน
                                 </a>
-                            </li>
+                            </li> -->
                         @endif
                         
                         @if(auth()->user()->isSuperAdmin())
-                            <li>
+                            <!-- <li>
                                 <a href="#" class="{{ request()->routeIs('settings.*') ? 'active' : '' }}">
                                     <i class="fas fa-cog"></i>
                                     ตั้งค่าระบบ
                                 </a>
-                            </li>
+                            </li> -->
                         @endif
                     @endauth
                     
@@ -375,5 +418,37 @@
     
     <!-- Cropper.js JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    
+    <!-- Slide Menu JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const drawerToggle = document.getElementById('drawer-toggle');
+            const drawerOverlay = document.querySelector('.drawer-overlay');
+            
+            // Close drawer when clicking overlay
+            if (drawerOverlay) {
+                drawerOverlay.addEventListener('click', function() {
+                    drawerToggle.checked = false;
+                });
+            }
+            
+            // Close drawer when pressing Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && drawerToggle.checked) {
+                    drawerToggle.checked = false;
+                }
+            });
+            
+            // Handle responsive behavior
+            function handleResize() {
+                if (window.innerWidth >= 1024) {
+                    drawerToggle.checked = false;
+                }
+            }
+            
+            window.addEventListener('resize', handleResize);
+            handleResize(); // Initial call
+        });
+    </script>
 </body>
 </html>
